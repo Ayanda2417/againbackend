@@ -1,0 +1,1 @@
+//handle queries and errors on database only

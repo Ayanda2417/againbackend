@@ -1,0 +1,40 @@
+CREATE TABLE "user" (
+    userID SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    surname VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('coordinator', 'respondent'))
+    
+);
+
+
+CREATE TABLE survey (
+    surveyID SERIAL PRIMARY KEY,
+    userID INT NOT NULL REFERENCES "user"(userID),
+    title VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL CHECK (status IN ('close', 'open')),
+    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE question (
+    questionID SERIAL PRIMARY KEY,
+    surveyID INT NOT NULL REFERENCES survey(surveyID),
+    questionText TEXT NOT NULL
+);
+
+
+CREATE TABLE "option" (
+    optionID SERIAL PRIMARY KEY,
+    questionID INT NOT NULL REFERENCES question(questionID),
+    optionText TEXT NOT NULL
+);
+
+
+CREATE TABLE response (
+    responseID SERIAL PRIMARY KEY,
+    surveyID INT NOT NULL REFERENCES survey(surveyID),
+    respondentID INT NOT NULL REFERENCES "user"(userID),
+    optionID INT NOT NULL REFERENCES Option(optionID)
+);
