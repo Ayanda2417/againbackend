@@ -38,3 +38,5 @@ CREATE TABLE response (
     respondentID INT NOT NULL REFERENCES "user"(userID),
     optionID INT NOT NULL REFERENCES Option(optionID)
 );
+
+

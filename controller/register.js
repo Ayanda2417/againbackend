@@ -1,68 +1,37 @@
-const  bcrypt  =  require("bcrypt");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const UserModel = require("../models/User");
 
-const  client  =  require("../configs/database");
+exports.register = async (req, res) => {
+  const { name, surname, email, password, role } = req.body;
 
-const  jwt  =  require("jsonwebtoken");
+  try {
+    const userExists = await UserModel.findUserByEmail(email);
 
-//Registration Function
+    if (userExists.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "Email already there, No need to register again." });
+    }
 
-exports.register  =  async (req, res) => {
-const { name, surname, email, password, role } =  req.body;
-try {
-const  data  =  await client.query(`SELECT * FROM users WHERE email= $1;`, [email]); //Checking if user already exists
-const  arr  =  data.rows;
-if (arr.length  !=  0) {
-return  res.status(400).json({
-error: "Email already there, No need to register again.",
-});
-}
-else {
-bcrypt.hash(password, 10, (err, hash) => {
-if (err)
-res.status(err).json({
-error: "Server error",
-});
-const  user  = {
-name,
-surname,
-email,
-password: hash,
-role,
+    bcrypt.hash(password, 10, async (err, hash) => {
+      if (err) {
+        return res.status(500).json({ error: "Server error" });
+      }
+
+      try {
+        await UserModel.insertUser(name, surname, email, hash, role);
+        const token = jwt.sign({ email }, process.env.SECRET_KEY);
+        res
+          .status(200)
+          .json({ message: "User added to database, not verified", token });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Database error" });
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error while registering user!" });
+  }
 };
-var  flag  =  1; //Declaring a flag
-
-//Inserting data into the database
-
-client
-.query(`INSERT INTO users (name,surname, email, password, role) VALUES ($1,$2,$3,$4,$5);`, [user.name,user.surname, user.email,user.password, user.role], (err) => {
-
-if (err) {
-flag  =  0; //If user is not inserted is not inserted to database assigning flag as 0/false.
-console.error(err);
-return  res.status(500).json({
-error: "Database error"
-})
-}
-else {
-flag  =  1;
-res.status(200).send({ message: 'User added to database, not verified' });
-}
-})
-if (flag) {
-const  token  = jwt.sign( //Signing a jwt token
-{
-email: user.email
-},
-process.env.SECRET_KEY
-);
-};
-});
-}
-}
-catch (err) {
-console.log(err);
-res.status(500).json({
-error: "Database error while registering user!", //Database connection error
-});
-};
-}
